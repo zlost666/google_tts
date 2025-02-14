@@ -1,6 +1,9 @@
 import streamlit as st
 from pydub import AudioSegment
 from io import BytesIO
+import imageio
+
+AudioSegment.ffmpeg = imageio.plugins.ffmpeg.get_exe()
 
 # Set up the Streamlit app
 st.title("Connect Several MP3 Files into One")
