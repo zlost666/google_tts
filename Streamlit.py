@@ -1,6 +1,7 @@
 import streamlit as st
 import subprocess
 from io import BytesIO
+import os
 
 # Set up the Streamlit app
 st.title("Connect Several MP3 Files into One")
