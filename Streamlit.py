@@ -20,7 +20,9 @@ if len(uploaded_files) > 1:
         output = BytesIO()
         combined.export(output, format="mp3")
         output.seek(0)  # Reset pointer to the start of the BytesIO object
-
+        
+        st.audio(output, format='audio/mp3')
+        
         # Provide download link for the concatenated file
         st.download_button(
             label="Download Combined MP3",
@@ -28,4 +30,3 @@ if len(uploaded_files) > 1:
             file_name="combined_audio.mp3",
             mime="audio/mpeg"
         )
-        st.audio(data, format='audio/mp3')
