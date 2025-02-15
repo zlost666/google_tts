@@ -1,14 +1,23 @@
 import streamlit as st
 from google.cloud import texttospeech
+from google.auth import credentials
 
-# Fetch credentials from Streamlit secrets
+# Fetch credentials from Streamlit secrets (service account JSON)
+# You need to use the path to the credentials file or directly load the credentials
+# from the Streamlit secrets if they are available
+
+# Assume you have the correct credentials in your Streamlit secrets
 tts_credentials = st.secrets["google_tts"]["my_project_settings"]
 
-# Convert the AttrDict to a regular Python dictionary
-tts_credentials_dict = dict(tts_credentials)
+# If your secret contains the entire service account key JSON, you can load it directly:
+import json
+from google.oauth2 import service_account
 
-# Initialize Google Cloud TTS client with credentials
-client = texttospeech.TextToSpeechClient(credentials=tts_credentials_dict)
+# Convert your credentials JSON from Streamlit secrets into a valid service account object
+credentials = service_account.Credentials.from_service_account_info(tts_credentials)
+
+# Initialize Google Cloud TTS client with the correct credentials
+client = texttospeech.TextToSpeechClient(credentials=credentials)
 st.write("Google Cloud TTS client initialized!")
 
 # Define the text input and the voice configuration
@@ -46,4 +55,3 @@ st.download_button(
     file_name="output.mp3",
     mime="audio/mp3"
 )
-
