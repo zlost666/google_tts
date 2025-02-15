@@ -28,4 +28,4 @@ if len(uploaded_files) > 1:
             file_name="combined_audio.mp3",
             mime="audio/mpeg"
         )
-        st.audio(output, format='audio/mp3')
+        st.audio(data, format='audio/mp3')
