@@ -32,7 +32,7 @@ def split_by_size(input_string, max_size=4970):
         chunks.append(current_chunk)
     return chunks
 
-st.title("XML Chapter Viewer")
+st.title("XML to Google_TTS")
 uploaded_file = st.file_uploader("Upload an XML file", type=["xml"])
 
 output_dir = "generated_mp3s"
