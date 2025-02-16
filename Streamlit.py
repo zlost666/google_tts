@@ -62,7 +62,7 @@ if st.button("Extract Chapters"):
     st.session_state['chunks'] = {}
     for chapter_number in range(first_chapter, last_chapter + 1):
         text_input = extract_chapter_text(st.session_state['file_content'], chapter_number)
-        replace_dict = {' ': ' ', '***': ' ', '<p>': '', '</p>': ' ', '<section>': '', '</section>': '', '<title>': '', '</title>': '', '\n': ''}
+        replace_dict = {' ': ' ', '***': ' ', '<p>': '', '</p>': ' ', '<p/>': ' ', '<section>': '', '</section>': '', '<title>': '', '</title>': '', '\n': ''}
         for old, new in replace_dict.items():
             text_input = text_input.replace(old, new)
 
