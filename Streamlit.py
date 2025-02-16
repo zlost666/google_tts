@@ -23,7 +23,7 @@ def extract_chapter_text(file, chapter_number):
 def byte_size(s):
     return len(s.encode('utf-8'))
 
-def split_by_size(input_string, max_size=40):
+def split_by_size(input_string, max_size=4970):
     words = input_string.split()
     chunks = []
     current_chunk = ''
