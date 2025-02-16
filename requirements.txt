@@ -1,3 +1,5 @@
 pydub
 google-cloud-texttospeech
 beautifulsoup4
+lxml
+html5lib
