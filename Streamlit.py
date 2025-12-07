@@ -32,7 +32,7 @@ def split_by_size(input_string, max_size=4970):
         chunks.append(current_chunk)
     return chunks
 
-st.title("XML to Google_TTS")
+st.title("XML to Google_TTS (Single MP3)")
 uploaded_file = st.file_uploader("Upload an XML file", type=["xml"])
 
 output_dir = "generated_mp3s"
@@ -40,18 +40,16 @@ os.makedirs(output_dir, exist_ok=True)
 
 if 'chunks' not in st.session_state:
     st.session_state['chunks'] = {}
-if 'mp3_files' not in st.session_state:
-    st.session_state['mp3_files'] = []
 if 'file_content' not in st.session_state:
     st.session_state['file_content'] = None
+if 'final_mp3' not in st.session_state:
+    st.session_state['final_mp3'] = None
 
 if uploaded_file is not None:
     st.session_state['file_content'] = uploaded_file.read()
 
 # Create columns with specified width ratios
-col1, col2 = st.columns([1, 1])  # Adjust the numbers to change the width ratios
-
-# Place the inputs in the columns
+col1, col2 = st.columns([1, 1])
 with col1:
     first_chapter = st.number_input("Enter First Chapter Number", min_value=0, step=1)
 with col2:
@@ -62,44 +60,56 @@ if st.button("Extract Chapters"):
     st.session_state['chunks'] = {}
     for chapter_number in range(first_chapter, last_chapter + 1):
         text_input = extract_chapter_text(st.session_state['file_content'], chapter_number)
-        replace_dict = {' ': ' ', '***': ' ', '<p>': '', '</p>': ' ', '<p/>': ' ', '<section>': '', '</section>': '', '<title>': '', '</title>': '', '\n': ''}
+        replace_dict = {
+            '***': ' ', '<p>': '', '</p>': ' ', '<p/>': ' ',
+            '<section>': '', '</section>': '', '<title>': '', '</title>': '', '\n': ''
+        }
         for old, new in replace_dict.items():
             text_input = text_input.replace(old, new)
 
         st.session_state['chunks'][chapter_number] = split_by_size(text_input)
-        st.write(f"Chapter {chapter_number}:")
-        for chunk in st.session_state['chunks'][chapter_number]:
-            st.text(chunk)
+        st.write(f"Chapter {chapter_number} extracted with {len(st.session_state['chunks'][chapter_number])} chunks.")
 
-# Step 2: Generate MP3 files
-if len(st.session_state['chunks']) > 0 and st.button("Generate MP3s"):
-    mp3_files = []
+# Step 2: Generate ONE merged MP3 file
+if len(st.session_state['chunks']) > 0 and st.button("Generate Single MP3"):
+    combined_audio = AudioSegment.empty()
     for chapter_number in range(first_chapter, last_chapter + 1):
         chapter_chunks = st.session_state['chunks'][chapter_number]
-        combined_audio = AudioSegment.empty()
         for chunk in chapter_chunks:
             input_text = texttospeech.SynthesisInput(text=chunk)
-            voice = texttospeech.VoiceSelectionParams(language_code="ru-RU", name="ru-RU-Standard-C", ssml_gender=texttospeech.SsmlVoiceGender.FEMALE)
-            audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3, volume_gain_db=5.0, speaking_rate=1.0, pitch=5.0, sample_rate_hertz=48000)
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="ru-RU",
+                name="ru-RU-Standard-C",
+                ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
+            )
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.MP3,
+                volume_gain_db=5.0,
+                speaking_rate=1.0,
+                pitch=5.0,
+                sample_rate_hertz=48000
+            )
 
-            response = client.synthesize_speech(request={"input": input_text, "voice": voice, "audio_config": audio_config})
+            response = client.synthesize_speech(
+                request={"input": input_text, "voice": voice, "audio_config": audio_config}
+            )
             audio_data = BytesIO(response.audio_content)
             audio_data.seek(0)
 
             audio = AudioSegment.from_mp3(audio_data)
             combined_audio += audio
 
-        output_filename = os.path.join(output_dir, f"chapter_{chapter_number}.mp3")
-        combined_audio.export(output_filename, format="mp3")
-        mp3_files.append(output_filename)
+    output_filename = os.path.join(output_dir, f"chapters_{first_chapter}_to_{last_chapter}.mp3")
+    combined_audio.export(output_filename, format="mp3")
+    st.session_state['final_mp3'] = output_filename
+    st.success("Single MP3 file generated successfully!")
 
-    st.session_state['mp3_files'] = mp3_files
-    st.success("MP3 files generated successfully!")
-
-# Display audio links and download buttons
-if len(st.session_state['mp3_files']) > 0:
-    for file_path in st.session_state['mp3_files']:
-        st.write(f"Chapter {file_path} - Listen:")
-        st.audio(file_path)
-        with open(file_path, "rb") as f:
-            st.download_button(label=f"Download {file_path}", data=f, file_name=os.path.basename(file_path), mime="audio/mp3")
+# Step 3: Provide download button only (no listen)
+if st.session_state['final_mp3']:
+    with open(st.session_state['final_mp3'], "rb") as f:
+        st.download_button(
+            label="Download Merged MP3",
+            data=f,
+            file_name=os.path.basename(st.session_state['final_mp3']),
+            mime="audio/mp3"
+        )
