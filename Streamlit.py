@@ -122,4 +122,11 @@ if len(st.session_state['chunks']) > 0 and st.button("Generate Single MP3"):
     st.success("Single MP3 file generated successfully!")
 
 # Step 3: Download only (no listening)
-if st.session_state
+if st.session_state['final_mp3']:
+    with open(st.session_state['final_mp3'], "rb") as f:
+        st.download_button(
+            label="Download Merged MP3",
+            data=f,
+            file_name=os.path.basename(st.session_state['final_mp3']),
+            mime="audio/mp3"
+        )
