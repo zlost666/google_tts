@@ -26,18 +26,21 @@ def split_by_size(input_string, max_size=4970):
         if len(temp_chunk.encode('utf-8')) <= max_size:
             current_chunk = temp_chunk
         else:
-            chunks.append(current_chunk)
+            if current_chunk:
+                chunks.append(current_chunk)
             current_chunk = word
     if current_chunk:
         chunks.append(current_chunk)
     return chunks
 
 st.title("XML to Google_TTS (Single MP3)")
+
 uploaded_file = st.file_uploader("Upload an XML file", type=["xml"])
 
 output_dir = "generated_mp3s"
 os.makedirs(output_dir, exist_ok=True)
 
+# Session state
 if 'chunks' not in st.session_state:
     st.session_state['chunks'] = {}
 if 'file_content' not in st.session_state:
@@ -48,33 +51,47 @@ if 'final_mp3' not in st.session_state:
 if uploaded_file is not None:
     st.session_state['file_content'] = uploaded_file.read()
 
-# Create columns with specified width ratios
+# Inputs
 col1, col2 = st.columns([1, 1])
 with col1:
     first_chapter = st.number_input("Enter First Chapter Number", min_value=0, step=1)
 with col2:
     last_chapter = st.number_input("Enter Last Chapter Number", min_value=0, step=1)
 
-# Step 1: Extract Chapters and Split into Chunks
+# Step 1: Extract and split
 if st.button("Extract Chapters"):
     st.session_state['chunks'] = {}
-    for chapter_number in range(first_chapter, last_chapter + 1):
-        text_input = extract_chapter_text(st.session_state['file_content'], chapter_number)
-        replace_dict = {
-            '***': ' ', '<p>': '', '</p>': ' ', '<p/>': ' ',
-            '<section>': '', '</section>': '', '<title>': '', '</title>': '', '\n': ''
-        }
-        for old, new in replace_dict.items():
-            text_input = text_input.replace(old, new)
+    if st.session_state['file_content'] is None:
+        st.warning("Please upload an XML file first.")
+    else:
+        for chapter_number in range(first_chapter, last_chapter + 1):
+            raw_text = extract_chapter_text(st.session_state['file_content'], chapter_number)
 
-        st.session_state['chunks'][chapter_number] = split_by_size(text_input)
-        st.write(f"Chapter {chapter_number} extracted with {len(st.session_state['chunks'][chapter_number])} chunks.")
+            # Clean minimal XML tags/content
+            replace_dict = {
+                '***': ' ',
+                '<p>': '', '</p>': ' ',
+                '<p/>': ' ',
+                '<section>': '', '</section>': '',
+                '<title>': '', '</title>': '',
+                '\n': ''
+            }
+            for old, new in replace_dict.items():
+                raw_text = raw_text.replace(old, new)
 
-# Step 2: Generate ONE merged MP3 file
+            chunks = split_by_size(raw_text)
+            st.session_state['chunks'][chapter_number] = chunks
+
+            # Show extracted text directly
+            with st.expander(f"Chapter {chapter_number} text"):
+                st.text(raw_text)
+
+# Step 2: Generate a single merged MP3
 if len(st.session_state['chunks']) > 0 and st.button("Generate Single MP3"):
     combined_audio = AudioSegment.empty()
+
     for chapter_number in range(first_chapter, last_chapter + 1):
-        chapter_chunks = st.session_state['chunks'][chapter_number]
+        chapter_chunks = st.session_state['chunks'].get(chapter_number, [])
         for chunk in chapter_chunks:
             input_text = texttospeech.SynthesisInput(text=chunk)
             voice = texttospeech.VoiceSelectionParams(
@@ -104,12 +121,5 @@ if len(st.session_state['chunks']) > 0 and st.button("Generate Single MP3"):
     st.session_state['final_mp3'] = output_filename
     st.success("Single MP3 file generated successfully!")
 
-# Step 3: Provide download button only (no listen)
-if st.session_state['final_mp3']:
-    with open(st.session_state['final_mp3'], "rb") as f:
-        st.download_button(
-            label="Download Merged MP3",
-            data=f,
-            file_name=os.path.basename(st.session_state['final_mp3']),
-            mime="audio/mp3"
-        )
+# Step 3: Download only (no listening)
+if st.session_state
